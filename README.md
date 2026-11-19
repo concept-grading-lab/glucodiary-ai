@@ -4,7 +4,7 @@
 
 I started this project after seeing how awkward it can be to keep track of blood glucose checks when a doctor's schedule changes from day to day. The idea was to make the recording part straightforward and give people a clearer view of the information they have collected. I also wanted to explore where AI agents could help explain the results without asking a language model to perform the actual calculations.
 
-**[Try the public demo](https://YOUR-USERNAME.github.io/glucodiary-ai/)** · [How it works](ARCHITECTURE.md) · [Tests and limitations](EVALUATION_REPORT.md)
+**[Try the public demo]([https://YOUR-USERNAME.github.io/glucodiary-ai/](https://concept-grading-lab.github.io/glucodiary-ai/))** · [How it works](ARCHITECTURE.md) · [Tests and limitations](EVALUATION_REPORT.md)
 
 > **Before publishing:** replace `YOUR-USERNAME` in the demo link above with your GitHub username. If your repository has a different name, update that part of the URL too.
 
