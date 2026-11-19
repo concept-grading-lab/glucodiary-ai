@@ -1,57 +1,109 @@
-# GlucoDiary AI — Tested No-Login Recruiter Demo
+# GlucoDiary AI
 
-**Public demo: interactive, no sign-in, entirely fictional glucose values. Not for clinical use.**
+**A browser-based diabetes monitoring demo with a separately implemented multi-agent backend prototype.**
 
-This project demonstrates how a clinician-defined glucose testing calendar, manual meter readings, descriptive trend analysis and optional supplement/food tools could be combined with explainable agent workflows. The public workflow is a transparent **simulation**, not live LLM agents.
+I started this project after seeing how awkward it can be to keep track of blood glucose checks when a doctor's schedule changes from day to day. The idea was to make the recording part straightforward and give people a clearer view of the information they have collected. I also wanted to explore where AI agents could help explain the results without asking a language model to perform the actual calculations.
 
-## Easiest: run with just one file
+**[Try the public demo](https://YOUR-USERNAME.github.io/glucodiary-ai/)** · [How it works](ARCHITECTURE.md) · [Tests and limitations](EVALUATION_REPORT.md)
 
-Download **`index.html`**. It is a complete, self-contained website with its CSS and JavaScript embedded. Double-click it to open in Chrome. No ZIP, Python or other downloads are required just to explore the demo. Some browsers restrict persistent storage for local files; hosted GitHub Pages allows the normal browser-local persistence functionality.
+> **Before publishing:** replace `YOUR-USERNAME` in the demo link above with your GitHub username. If your repository has a different name, update that part of the URL too.
 
-## Publish on GitHub Pages (no backend needed)
+The public website uses *fictional* patient data. There is no login and it is not intended for medical decisions.
 
-1. Create a public GitHub repository named `glucodiary-ai` at https://github.com/new.
-2. On its repository homepage, use **Add file → Upload files**.
-3. Upload the downloaded **`index.html`** (exact filename, no other file required). Optionally add `README.md`, `EVALUATION_REPORT.md`, `ARCHITECTURE.md` and source files for recruiters to inspect.
-4. Commit the files to `main`.
-5. Open **Settings → Pages → Build and deployment → Deploy from a branch → main → /(root) → Save**.
-6. When Pages reports that deployment succeeded, use **Visit site**. A typical URL is `https://YOUR-USERNAME.github.io/glucodiary-ai/`.
-7. Test the hosted URL from a private/incognito window and from a phone.
+## What you can try
 
-The public site is **static**: it does not use the separate Python API. The same JavaScript calculations are also provided as individual `demo-core.js`, `demo.js` and `demo.css` files to facilitate code review. `index.html` already embeds them and does not fetch them.
+The demo opens directly in a browser. You can:
 
-## What you can demonstrate
+1. **Record a reading:** enter a fictional glucose value, date and testing occasion. The form checks the input and prevents duplicate entries for the same date and occasion.
+2. **See the calculations update:** the chart, average and recorded/missing counts change when a reading is added or deleted.
+3. **Inspect the testing calendar:** the example contains 28 planned slots over 14 days, with a daily breakfast check and an additional rotating check.
+4. **Try optional features:** switch on a fictional supplement tracker, preview a reminder message, or filter a small set of meal ideas by cuisine and selected ingredients/allergens.
+5. **Run the workflow trace:** see the evidence, pattern, explanation and safety stages, along with the numbers used in the example summary.
 
-- View a fictional 14-day monitoring period (28 scheduled checks, rotating additional testing occasions).
-- Directly enter and delete sample glucose readings and see the mean, chart and completed-test statistics update.
-- Select a meal/bedtime context; observe relevant data only.
-- Enable the optional fictional supplement tracker and preview, but **do not send**, a reminder.
-- Enable food suggestions, try cuisine and allergen filters (illustrative only, not allergy-safe advice).
-- Run a deterministic four-step evidence and simulated agent trace using the currently recorded fictional data.
-- Refresh for browser-local retention; reset all fictional entries.
+You can reset the example to its original state. Changes stay in your own browser storage on the hosted demo; they are not sent to a shared database. Please do not enter real health information.
 
-## Testing
+## Architecture at a glance
 
-See `EVALUATION_REPORT.md` for exact coverage and limitations. At final local verification (19 November 2026): **49 Python tests, 20 JavaScript tests, and 10 interactive Chromium DOM scenarios passed**. The test runner accessed the exact HTML/CSS/JS through browser DOM injection because this environment blocks browser URL navigation. This is **not equivalent to verifying a deployed GitHub Pages URL** or physical iPhone Safari.
+![Architecture showing the running public browser demo and the separate Python agent backend prototype](assets/architecture-overview.png)
 
-Reproduce from the full source structure with Python, Node.js and optionally Chromium/Playwright:
+The distinction between these two paths is important:
 
-```shell
+| Part | Current behaviour |
+| --- | --- |
+| **Public GitHub Pages demo** | Real form validation, descriptive glucose calculations, charts, browser-local sample storage, and a **simulated** four-stage trace. |
+| **Python backend prototype** | FastAPI routes, database models, scheduling and reminder code, plus an orchestrated agent workflow. It was tested locally with a **mocked AI provider**; it is **not** running on the public website. |
+| **External services** | Live AI calls, delivered emails, iPhone push notifications and a hosted private database require separate configuration and verification. |
+
+[See the detailed architecture and execution sequence](ARCHITECTURE.md).
+
+## How many agents are there?
+
+The **backend is organised as four stages**, managed by a Python orchestrator in `app/agents.py`:
+
+| Stage | What it does | How it works |
+| --- | --- | --- |
+| **1. EvidenceAgent** | Computes counts and descriptive statistics from stored readings. | Python calculations; **not an LLM call**. |
+| **2. PatternAgent** | Describes patterns supported by that evidence. | LLM call when configured. |
+| **3. ExplanationAgent** | Produces a plain-language account and possible questions for a clinician. | LLM call when configured. |
+| **4. SafetyReviewAgent** | Reviews the explanation and may hold it back. | LLM call plus a simple code-based safety guard. |
+
+So there are **four coordinated stages, of which three can call an AI model**. The public site's trace uses JavaScript rules to *illustrate* this sequence. A trace appearing on GitHub Pages is not proof that a live AI model was invoked.
+
+## How the code is organised
+
+| File | Role |
+| --- | --- |
+| `index.html` | Self-contained, no-login public demonstration served by GitHub Pages. |
+| `docs/demo-core.js` | Pure JavaScript schedule creation, reading validation, numerical summaries and recipe matching. |
+| `docs/demo.js` | UI event handlers, charts, browser-local state and simulated agent trace. |
+| `docs/demo.css` | Responsive frontend styles for the modular source version. |
+| `app/main.py` | Separate Python API endpoints and protected application routes. |
+| `app/services.py` | Backend validation, schedules, deterministic statistics and CSV export. |
+| `app/agents.py` | Four-stage orchestration and agent execution records. |
+| `app/notifications.py` | Reminder dispatch with external email/Web Push integrations. |
+| `app/models.py`, `app/db.py` | Database models and session setup. |
+| `tests/` | Python, Node.js and browser interaction tests. |
+
+The code in `docs/` is supplied in separate files for inspection and testing. The root `index.html` bundles the public demo so it can be hosted as a single static file. GitHub Pages does not execute anything inside `app/`.
+
+## How I evaluated it
+
+The following checks were rerun against the local repository on **19 November 2026**:
+
+| Test level | Result | What it establishes |
+| --- | --- | --- |
+| Python `pytest` | **49 passed** | Backend validation, API, schedules, storage, mocked provider orchestration and mocked notification dispatch. |
+| Node.js tests | **20 passed** | Frontend calculations, date/duplicate validation, filtering and state behaviour. |
+| Chromium interactive scenarios | **10 passed**, plus exception check | Core visitor interactions and a narrow mobile viewport, using injected page content because local navigation was blocked by the test environment. |
+
+These results do **not** establish clinical correctness, successful live AI responses, real-world notification delivery, or a fully tested hosted site.
+
+[Read the evaluation report, including the problems found and fixed](EVALUATION_REPORT.md).
+
+To repeat the automated tests from the repository root (requires Python and Node.js):
+
+```bash
 python -m pip install -r requirements.txt
 python -m pytest -q
 node --test tests/test_recruiter_demo.cjs
 node --check docs/demo-core.js
 node --check docs/demo.js
-# Optional graphical Chromium interaction test:
-python -m pip install playwright
-python -m playwright install chromium
-python tests/test_browser_e2e.py
 ```
 
-To use the individual modular source code instead of the bundled HTML, the originals are in `docs/index.html`, `docs/demo.css`, `docs/demo-core.js` and `docs/demo.js`.
+For the optional Chromium interaction test, install Playwright and its browser, then run `python tests/test_browser_e2e.py`.
 
-## Safety, privacy and truth in portfolio claims
+## Run or publish the public demo
 
-Never enter actual health data on the public demo. The website has no real login, hosted database, live AI-provider API calls, real email notification service or iPhone Web Push integration. The optional recipes do not provide medically validated nutrition or allergy safety advice. A protected patient app and real notifications would require separate hosting, credentials, consent, clinical-safety assessment and end-to-end device verification. The `app/` Python source is included as a **separate protected-backend prototype**, not executed by GitHub Pages.
+**Locally:** open `index.html` in Chrome, or serve the repository folder with `python -m http.server 8000` and open `http://localhost:8000/`.
 
-Official GitHub Pages instructions: https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site
+**On GitHub Pages:** open **Settings → Pages**, choose **Deploy from a branch**, select **`main`** and **`/(root)`**, then save. The root `index.html` is the entry point. The exact website URL is shown on the Pages settings screen once deployed.
+
+To show the diagram and documentation on the repository homepage, keep `README.md`, `ARCHITECTURE.md`, `EVALUATION_REPORT.md` and `assets/architecture-overview.png` in the locations shown here. GitHub renders the README, PNG image and Mermaid diagrams automatically. The documentation does **not** automatically appear inside the live app's interface. An optional updated root `index.html` is supplied with this documentation set; replacing your current `index.html` with it adds the architecture image to the public website without changing the existing demo logic.
+
+## Boundaries and next steps
+
+This is a software portfolio prototype, **not a clinical device or a validated treatment assistant**. It uses fictional readings. Meal suggestions are only examples and do not establish allergy safety. The public version neither sends reminders nor calls an AI model.
+
+The next engineering step would be to deploy a protected backend with synthetic test accounts, add real service integration tests, evaluate agent output against reference evidence, and conduct security, accessibility and clinical-safety reviews before considering real patients.
+
+**Project author:** Shirin Lade
